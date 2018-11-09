@@ -168,9 +168,11 @@
         
         // 创建节点
         function getNode(item){
+            var imgUrl = item.img_url.replace('http','https');
+            var url = item.url.replace('http','https');
             var tpl = '';
             tpl += '<li class="item">';
-            tpl += '<a class="link" href="'+item.url+'"><img src="'+item.img_url+'" alt=""></a>';
+            tpl += '<a class="link" href="'+url+'"><img src="'+imgUrl+'" alt=""></a>';
             tpl += '<h4 class="header">'+item.short_name+'</h4>';
             tpl += '<p class="desp">'+item.short_intro+'</p>';
             tpl += '</li>';
