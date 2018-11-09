@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.bootcss.com/jquery/2.1.0/jquery.min.js"></script>
+    <style>
+        html,body,ul,li,p{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+        ul,li{
+            list-style: none;
+        }
+        .wrap{
+            width:900px;
+            margin:0 auto;
+        }
+
+        .clearfix::after{
+            content:"";
+            display:block;
+            clear:both;
+        }
+        #pic-ct{
+            position: relative;
+        }
+        #pic-ct .item{
+            
+            position: absolute;
+            padding:0 0 10px 0;
+            width:280px;
+            margin:10px;
+            box-shadow:2px 2px 2px #e8e8e8;
+            border:1px solid #dfdfdf;
+            background:#fff;
+            transition:all 0.8s;
+        }
+        #pic-ct .item img{
+            margin:10px;
+            width:260px;;
+        }
+        #pic-ct .item .header{
+            height:25px;
+            margin:0 12px;
+            border-bottom:1px solid #dbdbdb;
+        }
+        #pic-ct .desp{
+            font-size: 12px;
+            line-height: 1.8;
+            margin:10px 15px 0;
+            color:#777371;
+        }
+        #load{
+            visibility: hidden;
+            height:20px;
+        }
+        .hide{
+            display: none;
+        }
+    
+    
+    </style>
+</head>
+<body>
+    
+   <div class="wrap">
+        <div class="ct-waterfall">
+            <ul id="pic-ct" class="ct clearfix">
+                <!-- <li class="item">
+                        <a href="#" class="link">
+                            <img src="" alt="">
+                        </a>
+                        <h4 class="header">标题</h4>
+                        <p class="desp">世界互联网大会开幕！百度总裁带来自动驾驶 何猷君现身</p>
+                   </li> -->
+
+                   <!-- 用于计算 item宽度和列数 -->
+                   <li class="item hide"></li>
+            </ul>
+            <div id="load">我是看不见的</div>
+        </div>
+
+   </div>
+
+    <script>
+        // 思路
+        // 1. 获取数据
+        // 2. 把数据拼装成DOM放在页面上
+        // 3. 使用瀑布流去摆放位置
+
+        // 1、获取page=1 的 10条数据
+        // 2、把10条数据拼装成DOM放在页面上
+        // 3、使用瀑布流去摆放DOM位置
+        // 4、page++
+
+        // 当页面滚动（或者某个条件下）
+        // 1、获取page 的 10条数据
+        // 2、把10条数据拼装成DOM放在页面上
+        // 3、使用瀑布流去摆放DOM位置
+        // 4、page++
+        
+        
+
+        //发送给后台的参数，第一个是分页，第二个是一次请求的数据量
+        var curPage = 1,
+            perPageCount = 10;
+
+        var colSumHeight = [];
+        var $target = $('#load');
+        // 当页面滚动的时候，判断元素是否出现在视窗中
+        $(window).on('scroll', function () {
+            checkshow();
+        })
+
+        // 一开始，页面还没有滚动的时候就判断一下
+        checkshow();
+
+        // 检查是否出现
+        function checkshow() {
+            if (isShow($target)) {
+               dosth();
+            }
+        }
+
+        // 判断是否出现在视口，出现就返回true，否则返回false
+        function isShow($el) {
+            var scrollH = $(window).scrollTop(),
+                winH = $(window).height(),
+                top = $el.offset().top;
+
+            if (top < winH + scrollH) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        
+        function dosth() {
+            $.ajax({
+            url: 'http://platform.sina.com.cn/slide/album_tech',
+            type: 'GET',
+            dataType: 'jsonp',
+            jsonp: 'jsoncallback',
+            data: {
+                app_key: '1271687855',
+                format: 'json',
+                size: 'img',
+                num: perPageCount,
+                page: curPage
+            },
+            success: function (ret) {
+                console.log(ret);
+                
+                if (ret.status.code == 0) {
+                    var dataArr = ret.data;
+                    $nodes = renderData(dataArr);
+                    render($nodes);
+                    curPage++;
+                }
+            }
+        })
+        }
+
+        function render($nodes){
+            var  nodeWidth = $nodes.outerWidth(true),
+                 colNum = parseInt($(window).width()/ nodeWidth);
+
+            if(colSumHeight.length==0){
+                for (var i = 0; i < colNum; i++) {
+                    colSumHeight[i] = 0;
+                }
+            }  
+            
+            
+            $nodes.each(function(){
+                 // 图片都加载好之后，再去计算高度渲染，否则计算的高度有可能是错误的å
+                $(this).find('img').on('load', function () {
+                   var $cur = $(this);
+                    var idx = 0,
+                        minSumHeight = colSumHeight[0];
+
+                    for (var i = 0; i < colNum; i++) {
+                        if (colSumHeight[i] < minSumHeight) {
+                            idx = i;
+                            minSumHeight = colSumHeight[i];
+                        }
+                    }
+                    $cur.css({
+                        left: idx * nodeWidth,
+                        top: minSumHeight
+                    })
+                    colSumHeight[idx] += $cur.outerHeight(true);
+                })
+            })
+        }
+
+        // render();
+
+        // $(window).on('resize',function(){
+        //     render();
+        // })
+
+
+
+
+
+
+     
+
+
+
+
+
+
+
+
+        
+        
+        // 核心代码
+        // // 当#load曝光的时候
+        // Exposure.init($('#load'),function(){
+        //     // 发送请求获取数据
+        //     getData(function(data){
+        //         // 拿到数据以后，渲染到页面上
+        //         var $nodes = renderData(data);
+        //         // 把这些节点去做瀑布流摆放
+        //         Waterfall.start($node);
+        //     })
+        // })
+
+        // function getData(callback){
+        //     $.ajax({
+        //         url:'http://platform.sina.com.cn/slide/album_tech',
+        //         type:'GET',
+        //         dataType:'jsonp',
+        //         jsonp:'jsoncallback',
+        //         data:{
+        //             app_key:'1271687855',
+        //             format:'json',
+        //             size:'img',
+        //             num:perPageCount,
+        //             page:curPage
+        //         },
+        //         success:function(ret){
+        //             if(ret.status.code ==0){
+        //                 callback(ret.data);
+        //                 curPage++;
+        //             }
+        //         }
+        //     })
+        // }
+
+        function renderData(items){
+            var tpl = '',
+                $nodes;
+            for(var i = 0;i<items.length;i++){
+                tpl += '<li class="item">';
+                tpl += '<a href="'+items[i].url+' class="link"><img src="'+items[i].img_url+'" alt=""></a>';
+                tpl += '<h4 class="header">'+items[i].short_name+'</h4>';
+                tpl += '<p class="desp">'+items[i].short_intro+'</p>';
+                tpl += '</li>';
+            }
+            $nodes = $(tpl);
+            $('#pic-ct').append($nodes);
+            return $nodes;
+        }
+
+
+        
+
+
+        // var ExposureTarget = (function(){
+        //     function bind($target,handler){
+        //         // 当页面滚动的时候，判断元素是否出现在视窗中
+        //         $(window).on('scroll', function () {
+        //             checkshow();
+        //         })
+
+        //         // 一开始，页面还没有滚动的时候就判断一下
+        //         checkshow();
+
+        //         // 检查是否出现
+        //         function checkshow() {
+        //             if (isShow($target)) {
+        //                 handler()
+        //             }
+        //         }
+
+        //         // 判断是否出现在视口，出现就返回true，否则返回false
+        //         function isShow($el) {
+        //             var scrollH = $(window).scrollTop(),
+        //                 winH = $(window).height(),
+        //                 top = $el.offset().top;
+
+        //             if (top < winh + scrollH) {
+        //                 return true;
+        //             } else {
+        //                 return false;
+        //             }
+        //         }
+
+        //     }
+        //     return {
+        //         bind:bind
+        //     }
+        // })()
+        
+        // ExposureTarget.bind($('#load'),dosth());
+        // function dosth(){
+        //     console.log('do sth.....');
+        // }
+
+        
+        
+    
+    
+    
+    </script>
+</body>
+</html>
